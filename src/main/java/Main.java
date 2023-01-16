@@ -6,9 +6,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 public class Main {
     public static ObjectMapper objectMapper = new ObjectMapper();
@@ -22,13 +23,24 @@ public class Main {
                         .build())
                 .build()) {
 
-            HttpGet request = new HttpGet("https://raw.githubusercontent.com/netology-code/jd-homeworks/master/http/task1/cats");
+            HttpGet request = new HttpGet("https://api.nasa.gov/planetary/apod?api_key=we1flFBZSJxcXLg1wNg4JCxxZ4LgMyNMdCRfcOs1");
             CloseableHttpResponse response = httpClient.execute(request);
-            List<CatsFacts> catsFactsList = objectMapper.readValue(response.getEntity().getContent(), new TypeReference<>() {
+            NASAObject nasaObject = objectMapper.readValue(response.getEntity().getContent(), new TypeReference<>() {
             });
-            System.out.println(catsFactsList.stream()
-                    .filter(x -> x.getUpvotes() != null && x.getUpvotes() > 0)
-                    .collect(Collectors.toList()));
+            String pictureURL = nasaObject.getHdurl();
+            String[] fileName = pictureURL.split("/");
+            response = httpClient.execute(new HttpGet(pictureURL));
+            try (BufferedInputStream bufferedInputStream = new BufferedInputStream(response.getEntity().getContent());
+                 FileOutputStream fileOutputStream = new FileOutputStream(fileName[fileName.length - 1])) {
+                int i;
+                while ((i = bufferedInputStream.read()) != -1) {
+                    fileOutputStream.write(i);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
